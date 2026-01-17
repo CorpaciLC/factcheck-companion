@@ -1,12 +1,14 @@
-"""
-Caregiver's Fact-Check Companion
+"""Fact-Check Companion (Promptless Products)
 
+Narrow domain: helping one caregiver respond calmly when a loved one shares
+alarming videos.
 
-A WhatsApp bot that helps families research and debunk
-misleading videos that worry vulnerable family members.
+Promptless: the user doesn't have to ask "is this true?" or craft a prompt.
+They can just forward a link, and the system extracts claims, checks trusted
+signals, and drafts a short reply.
 
-
-Supports: YouTube, TikTok
+Restraint: it avoids strong conclusions when evidence is thin and labels
+confidence explicitly.
 """
 
 
@@ -22,7 +24,7 @@ from app.config import settings
 
 app = FastAPI(
     title="Caregiver's Fact-Check Companion",
-    description="WhatsApp bot for researching misleading videos",
+    description="Quiet-by-default fact-check companion for shared videos",
     version="1.0.0"
 )
 
@@ -64,6 +66,7 @@ async def health():
         "status": "healthy",
         "services": {
             "google_factcheck": bool(settings.GOOGLE_API_KEY),
+            "openai": bool(settings.OPENAI_API_KEY),
             "openrouter": bool(settings.OPENROUTER_API_KEY),
             "serper": bool(settings.SERPER_API_KEY),
             "twilio": bool(settings.TWILIO_ACCOUNT_SID),

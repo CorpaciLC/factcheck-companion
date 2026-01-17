@@ -1,6 +1,6 @@
 import os
 import openai
-from app.config import settings
+import app.config as config
 from app.models import VideoInfo, FactCheckResult, SearchResult
 
 
@@ -80,21 +80,77 @@ def get_deployment_name(model: str) -> str:
 
 
 
-def get_client() -> openai.AzureOpenAI:
-    """Create  LLM gateway client."""
-    deployment = get_deployment_name(settings.LLM_MODEL)
+def _openrouter_headers() -> dict:
+    headers: dict[str, str] = {}
+    if config.settings.OPENROUTER_SITE_URL:
+        headers["HTTP-Referer"] = config.settings.OPENROUTER_SITE_URL
+    if config.settings.OPENROUTER_APP_NAME:
+        headers["X-Title"] = config.settings.OPENROUTER_APP_NAME
+    return headers
 
 
-    return openai.AzureOpenAI(
-        api_key=settings.LLM_API_KEY,
-        azure_endpoint=settings.LLM_ENDPOINT,
-        azure_deployment=deployment,
-        api_version=settings.LLM_API_VERSION,
-        default_headers={
-            "Ocp-Apim-Subscription-Key": settings.LLM_API_KEY,
-            "user": os.getenv("USER", "factcheck-bot")
-        }
+def get_openrouter_client() -> openai.OpenAI:
+    """Create an OpenRouter client (OpenAI-compatible)."""
+    return openai.OpenAI(
+        api_key=config.settings.OPENROUTER_API_KEY,
+        base_url=config.settings.OPENROUTER_BASE_URL,
+        default_headers=_openrouter_headers(),
     )
+
+
+def get_openai_client() -> openai.OpenAI:
+    """Create a direct OpenAI client."""
+    return openai.OpenAI(api_key=config.settings.OPENAI_API_KEY)
+
+
+def get_azure_client() -> openai.AzureOpenAI:
+    """Create an Azure OpenAI client."""
+    deployment = get_deployment_name(config.settings.LLM_MODEL)
+    return openai.AzureOpenAI(
+        api_key=config.settings.LLM_API_KEY,
+        azure_endpoint=config.settings.LLM_ENDPOINT,
+        azure_deployment=deployment,
+        api_version=config.settings.LLM_API_VERSION,
+        default_headers={
+            # Some Azure APIM gateways require this header.
+            "Ocp-Apim-Subscription-Key": config.settings.LLM_API_KEY,
+            "user": os.getenv("USER", "factcheck-bot"),
+        },
+    )
+
+
+def get_llm_client_and_model() -> tuple[object, str, str]:
+    """Return (client, model, provider). Provider is 'openai' | 'openrouter' | 'azure'."""
+    provider = (config.settings.LLM_PROVIDER or "auto").strip().lower()
+
+    if provider == "openai":
+        if not config.settings.OPENAI_API_KEY:
+            raise RuntimeError("LLM_PROVIDER=openai but OPENAI_API_KEY is not set")
+        model = config.settings.OPENAI_MODEL or "gpt-4o-mini"
+        return get_openai_client(), model, "openai"
+
+    if provider == "openrouter":
+        if not config.settings.OPENROUTER_API_KEY:
+            raise RuntimeError("LLM_PROVIDER=openrouter but OPENROUTER_API_KEY is not set")
+        model = config.settings.OPENROUTER_MODEL or "openai/gpt-4o-mini"
+        return get_openrouter_client(), model, "openrouter"
+
+    if provider == "azure":
+        if not (config.settings.LLM_API_KEY and config.settings.LLM_ENDPOINT):
+            raise RuntimeError("LLM_PROVIDER=azure but LLM_API_KEY/LLM_ENDPOINT are not set")
+        return get_azure_client(), config.settings.LLM_MODEL, "azure"
+
+    # auto
+    if config.settings.OPENAI_API_KEY:
+        model = config.settings.OPENAI_MODEL or "gpt-4o-mini"
+        return get_openai_client(), model, "openai"
+    if config.settings.LLM_API_KEY and config.settings.LLM_ENDPOINT:
+        return get_azure_client(), config.settings.LLM_MODEL, "azure"
+    if config.settings.OPENROUTER_API_KEY:
+        model = config.settings.OPENROUTER_MODEL or "openai/gpt-4o-mini"
+        return get_openrouter_client(), model, "openrouter"
+
+    raise RuntimeError("No LLM configured (set OPENROUTER_API_KEY or LLM_API_KEY+LLM_ENDPOINT)")
 
 
 
@@ -108,8 +164,12 @@ async def generate_explanation(
 ) -> str:
     """Generate grandmother-friendly explanation using 's LLM gateway."""
 
-
-    if not settings.LLM_API_KEY:
+    # If no provider is configured, return a non-LLM fallback instead of failing the pipeline.
+    if not (
+        config.settings.OPENAI_API_KEY
+        or config.settings.OPENROUTER_API_KEY
+        or (config.settings.LLM_API_KEY and config.settings.LLM_ENDPOINT)
+    ):
         return _fallback_response(video_info, fact_checks, search_results)
 
 
@@ -189,18 +249,19 @@ Generate the response now:
 
 
     try:
-        if settings.DEBUG:
-            print(f"[LLM] Calling  gateway with model: {settings.LLM_MODEL}")
+        if config.settings.DEBUG:
+            print(f"[LLM] Provider setting: {config.settings.LLM_PROVIDER}")
             print(f"[LLM] Transcript available: {bool(video_info.transcript)}")
             if video_info.transcript:
                 print(f"[LLM] Transcript length: {len(video_info.transcript)} chars")
 
-
-        client = get_client()
-
+        client, model, provider = get_llm_client_and_model()
+        if config.settings.DEBUG:
+            print(f"[LLM] Using provider: {provider}")
+            print(f"[LLM] Using model: {model}")
 
         response = client.chat.completions.create(
-            model=settings.LLM_MODEL,
+            model=model,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
@@ -211,7 +272,7 @@ Generate the response now:
 
 
         result = response.choices[0].message.content
-        if settings.DEBUG:
+        if config.settings.DEBUG:
             print(f"[LLM] Success! Response length: {len(result)} chars")
 
 
