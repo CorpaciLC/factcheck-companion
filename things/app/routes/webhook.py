@@ -1,9 +1,8 @@
-"""
-WhatsApp Webhook Handler
+"""WhatsApp webhook handler
 
+Promptless UX: users can just forward a link.
 
-Receives messages from Twilio, processes video URLs,
-and returns fact-check explanations.
+Restraint: responses label confidence and avoid over-claiming when signals are weak.
 """
 
 
@@ -29,16 +28,14 @@ router = APIRouter()
 # Welcome message for first-time users or non-URL messages
 def get_welcome_message() -> str:
     """Generate welcome message, including dashboard link if configured."""
-    base_message = """Hi! I'm here to help you check if videos are trustworthy.
+    base_message = """Hi! Forward me a YouTube or TikTok link.
 
+You don't need to ask a question or write a prompt — I’ll:
+1) Pull the key claim(s)
+2) Check for formal fact-checks and trusted coverage
+3) Draft a short, calm reply you can copy-paste
 
-Just send me a YouTube or TikTok link, and I'll:
-1. Check what the video claims
-2. Look for fact-checks from trusted sources
-3. Give you a clear, sourced explanation
-
-
-Try sending a link now!"""
+I’ll be direct when evidence is strong, and cautious when it isn’t."""
 
 
     if settings.DASHBOARD_URL:

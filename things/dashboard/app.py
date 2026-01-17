@@ -1,9 +1,10 @@
-"""
-Caregiver's Fact-Check Companion - Public Dashboard
+"""Fact-Check Companion - Public Dashboard
 
+Shows the system's outputs and the signals behind them (fact-check matches,
+trusted coverage, creator pattern flags).
 
-A Streamlit app showing all fact-check queries made to the WhatsApp bot.
-All data is anonymized - no phone numbers or user identifiers are stored.
+Designed for long-term trust: it labels confidence and stays cautious when
+evidence is thin.
 """
 from __future__ import annotations
 

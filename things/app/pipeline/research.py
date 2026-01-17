@@ -1,13 +1,18 @@
-"""
-Research Pipeline Orchestrator
+"""Research pipeline (decision-focused)
 
+Given a shared video link, produce one narrow, high-impact output: a short,
+calm message the user can forward to a loved one.
 
-This is the core logic that ties everything together:
-1. Extract video info (YouTube or TikTok)
-2. Analyze creator's content pattern
-3. Check fact-check databases
-4. Search trusted news sources (fallback)
-5. Generate grandmother-friendly explanation
+Signals used (in order):
+1) Extracted transcript/title/description
+2) Creator pattern (recent titles)
+3) Google Fact Check Tools matches
+4) Trusted news coverage (fallback)
+
+Restraint:
+- If we find strong corroboration (formal fact-check), we allow a confident tone.
+- If we find only partial coverage, we keep it cautious.
+- If we find little to nothing, we avoid strong claims and say we're uncertain.
 """
 
 
@@ -20,12 +25,6 @@ from app.services import video, factcheck, search, llm
 async def research_video(url: str) -> ResearchResult:
     """
     Run the full research pipeline on a video URL.
-
-
-    Mutual Thriving Check embedded in the process:
-    - Self (grandmother): Explanation reduces anxiety, doesn't dismiss
-    - Others (family): Saves hours of manual research
-    - Future: Builds media literacy gently over time
     """
 
 

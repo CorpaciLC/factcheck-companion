@@ -57,7 +57,7 @@ async def main():
         print(f"Channel suspect: {result.channel_is_suspect}")
         print(f"\nSources: {result.sources}")
         print(f"\n{'-'*60}")
-        print("EXPLANATION (what grandmother would see):")
+        print("EXPLANATION (what the user would send):")
         print(f"{'-'*60}")
         print(f"\n{result.explanation}")
         print(f"\n{'='*60}\n")

@@ -87,7 +87,7 @@ def get_stats(queries):
 
 # Header
 st.title("🔍 Fact-Check Companion")
-st.markdown("*Helping families debunk misleading videos*")
+st.markdown("*Quiet, high-confidence explanations for shared videos*")
 st.divider()
 
 
@@ -134,7 +134,7 @@ st.subheader("📋 Recent Fact-Checks")
 
 
 if not queries:
-    st.info("No queries yet. Send a video link to the WhatsApp bot to get started!")
+    st.info("No checks yet. Forward a video link to the bot to get started.")
 else:
     for q in queries:
         with st.expander(f"**{q.get('video_title', 'Unknown')}** — {q.get('confidence', '?').upper()} confidence"):

@@ -19,7 +19,8 @@ class TestLLMProviderSelection(unittest.TestCase):
         os.environ["LLM_PROVIDER"] = "auto"
         os.environ["OPENROUTER_API_KEY"] = "test-key"
         os.environ["OPENROUTER_MODEL"] = "openai/gpt-4o-mini"
-        os.environ.pop("OPENAI_API_KEY", None)
+        # Ensure auto-selection doesn't pick OpenAI from a local .env
+        os.environ["OPENAI_API_KEY"] = ""
         os.environ.pop("LLM_API_KEY", None)
         os.environ.pop("LLM_ENDPOINT", None)
 
