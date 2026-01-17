@@ -13,7 +13,7 @@ python-dotenv>=1.0.0
 httpx>=0.26.0
 
 
-# OpenAI SDK (for AMD LLM Gateway - Azure OpenAI compatible)
+# OpenAI SDK
 openai>=1.0.0
 
 
