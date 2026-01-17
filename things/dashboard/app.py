@@ -1,10 +1,10 @@
 """Fact-Check Companion - Public Dashboard
 
-Shows the system's outputs and the signals behind them (fact-check matches,
-trusted coverage, creator pattern flags).
+Shows outputs and the signals behind them (fact-check matches, trusted coverage,
+creator-pattern flags).
 
-Designed for long-term trust: it labels confidence and stays cautious when
-evidence is thin.
+Optimized for top performers: high signal-to-noise, explicit confidence, and an
+auditable trail of sources.
 """
 from __future__ import annotations
 

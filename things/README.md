@@ -1,14 +1,14 @@
 # Fact-Check Companion (Promptless Products)
 
 ## One narrow domain
-A quiet companion for a single caregiver who regularly gets alarming videos from a loved one (e.g., evenings after work).
+A high-signal fact-check companion for one top-tier performer who needs to stay sharp when information is messy (e.g., after work, between meetings, on travel days).
 
-Instead of asking the user to craft prompts, the system turns a forwarded link into a short, calm reply the user can send back.
+Instead of asking you to craft prompts, it turns a forwarded link into a short, decision-ready brief you can forward (or use to decide what to ignore).
 
 ## What it does (and when)
 - **Input**: a YouTube or TikTok link (no prompt required).
-- **Output**: a brief message that summarizes the key claims and what reputable sources say.
-- **When it acts**: only when it has enough signal to be useful; otherwise it stays cautious and labels low confidence.
+- **Output**: a brief message summarizing the key claim(s), what reputable sources support/deny, and what to do with it.
+- **When it acts**: it stays low-noise; when signals are weak it says so and avoids overconfident conclusions.
 
 ## Signals (why it’s confident)
 The pipeline uses a small set of signals that are explainable:
@@ -18,7 +18,7 @@ The pipeline uses a small set of signals that are explainable:
 4. **Trusted coverage fallback**: targeted search across reputable domains.
 
 ## Restraint + timing
-This project intentionally optimizes for long-term trust:
+This project intentionally optimizes for long-term trust (high signal-to-noise):
 - **High confidence** (formal fact-check found): direct language and a clear recommendation.
 - **Medium confidence** (trusted coverage found): cautious language and what’s known.
 - **Low confidence** (little signal): explicitly says uncertainty and avoids strong claims.

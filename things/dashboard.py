@@ -87,7 +87,7 @@ def get_stats(queries):
 
 # Header
 st.title("🔍 Fact-Check Companion")
-st.markdown("*Quiet, high-confidence explanations for shared videos*")
+st.markdown("*High-signal verification for shared videos*")
 st.divider()
 
 

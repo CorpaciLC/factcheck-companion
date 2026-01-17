@@ -1,14 +1,12 @@
 """Fact-Check Companion (Promptless Products)
 
-Narrow domain: helping one caregiver respond calmly when a loved one shares
-alarming videos.
+Narrow domain: high-signal verification for a single top-tier performer who
+needs to stay on top of their game when a link is making the rounds.
 
-Promptless: the user doesn't have to ask "is this true?" or craft a prompt.
-They can just forward a link, and the system extracts claims, checks trusted
-signals, and drafts a short reply.
+Promptless: no "is this true?" prompt-writing. Forward a link and get a short,
+decision-ready brief.
 
-Restraint: it avoids strong conclusions when evidence is thin and labels
-confidence explicitly.
+Restraint: labels confidence and avoids over-claiming when evidence is thin.
 """
 
 
@@ -24,7 +22,7 @@ from app.config import settings
 
 app = FastAPI(
     title="Caregiver's Fact-Check Companion",
-    description="Quiet-by-default fact-check companion for shared videos",
+    description="High-signal, low-noise fact-check companion for shared videos",
     version="1.0.0"
 )
 

@@ -28,14 +28,14 @@ router = APIRouter()
 # Welcome message for first-time users or non-URL messages
 def get_welcome_message() -> str:
     """Generate welcome message, including dashboard link if configured."""
-    base_message = """Hi! Forward me a YouTube or TikTok link.
+    base_message = """Hi — send me a YouTube or TikTok link.
 
-You don't need to ask a question or write a prompt — I’ll:
-1) Pull the key claim(s)
-2) Check for formal fact-checks and trusted coverage
-3) Draft a short, calm reply you can copy-paste
+No prompt-writing. I’ll return a short, decision-ready brief:
+1) The key claim(s)
+2) What reputable sources support/deny
+3) A clear recommendation on what to do with it
 
-I’ll be direct when evidence is strong, and cautious when it isn’t."""
+I’ll be direct when evidence is strong, and explicitly cautious when it isn’t."""
 
 
     if settings.DASHBOARD_URL:
