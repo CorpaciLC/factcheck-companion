@@ -105,13 +105,46 @@ async def get_video_info(url: str) -> VideoInfo:
 
 
 async def _get_youtube_transcript(video_id: str) -> Optional[str]:
-    """Get transcript for YouTube video."""
+    """Get transcript for YouTube video. Tries multiple languages."""
     try:
         from youtube_transcript_api import YouTubeTranscriptApi
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-        full_transcript = " ".join([t['text'] for t in transcript_list])
-        return full_transcript[:5000]  # Limit length
-    except Exception:
+
+
+        # Try to get transcript - will auto-select available language
+        try:
+            # First try to get any available transcript
+            transcript_list = YouTubeTranscriptApi.list_transcripts(video_id)
+
+
+            # Prefer manual transcripts, then auto-generated
+            transcript = None
+            for t in transcript_list:
+                if not t.is_generated:
+                    transcript = t.fetch()
+                    break
+
+
+            if not transcript:
+                # Fall back to any available (including auto-generated)
+                for t in transcript_list:
+                    transcript = t.fetch()
+                    break
+
+
+            if transcript:
+                full_transcript = " ".join([t['text'] for t in transcript])
+                return full_transcript[:5000]
+
+
+        except Exception:
+            # Fallback: try default method
+            transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+            full_transcript = " ".join([t['text'] for t in transcript_list])
+            return full_transcript[:5000]
+
+
+    except Exception as e:
+        print(f"Transcript error: {e}")
         return None
 
 

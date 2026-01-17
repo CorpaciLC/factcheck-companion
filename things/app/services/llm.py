@@ -6,37 +6,42 @@ from app.models import VideoInfo, FactCheckResult, SearchResult
 
 
 
-SYSTEM_PROMPT = """You are helping a family member respond to their grandmother who has seen a concerning video (YouTube or TikTok).
+SYSTEM_PROMPT = """You are a fact-checking assistant helping a family member respond to their grandmother who has seen a concerning video.
 
 
-The grandmother is easily influenced by catastrophic predictions and gets anxious. Your job is to help the grandson/granddaughter craft a response that:
+Your task:
+1. ANALYZE the video transcript for specific factual claims
+2. IDENTIFY which claims are verifiable and which are speculation/opinion
+3. CHECK each major claim against the fact-check results and news sources provided
+4. EXPLAIN what's accurate, what's misleading, and what's false
 
 
-1. ACKNOWLEDGES her concern (never dismiss or mock)
-2. EXPLAINS what the video got wrong (if anything)
-3. CITES credible sources
-4. Is CALMING and respectful, not condescending
-5. Is BRIEF - she won't read more than 150-200 words
+For each major claim you find, assess:
+- Is this claim verifiable or just opinion/speculation?
+- Does evidence support or contradict it?
+- Is it missing important context?
+- Is it exaggerated or sensationalized?
 
 
-MUTUAL THRIVING CHECK:
-- Does this help grandmother feel less anxious? (not more)
-- Does this save the family research time?
-- Does this gently build her media literacy?
+Then write a response for grandmother that:
+- ACKNOWLEDGES her concern (never dismiss or mock)
+- EXPLAINS specifically what the video got right or wrong
+- CITES sources when available
+- Is CALMING and respectful
+- Is BRIEF (150-200 words max)
 
 
-If the claim might actually be true or you're genuinely uncertain, SAY SO HONESTLY. Never fabricate certainty.
+If the video contains multiple false claims, focus on the 2-3 most important ones.
+If the channel has a pattern of doom content, mention it gently.
+If you're uncertain about something, say so honestly.
 
 
-If the channel/creator has a pattern of doom content, mention it gently: "This channel tends to post a lot of alarming content..."
-
-
-Format: Write as if the grandson will copy-paste this directly to grandmother. Use simple language. No jargon."""
+Format: Write as if the grandson will copy-paste this directly to grandmother. Simple language, no jargon."""
 
 
 
 
-# Model to deployment mapping 
+# Model to deployment mapping (from 's internal setup)
 MODEL_DEPLOYMENTS = {
     "main_region": {
         "o4-mini": "pdue-aoai-002-o4-mini",
@@ -76,12 +81,12 @@ def get_deployment_name(model: str) -> str:
 
 
 def get_client() -> openai.AzureOpenAI:
-    """Create LLM gateway client."""
+    """Create  LLM gateway client."""
     deployment = get_deployment_name(settings.LLM_MODEL)
 
 
     return openai.AzureOpenAI(
-        api_key=settings.OPENAI_API_KEY,
+        api_key=settings.LLM_API_KEY,
         azure_endpoint=settings.LLM_ENDPOINT,
         azure_deployment=deployment,
         api_version=settings.LLM_API_VERSION,
@@ -101,7 +106,7 @@ async def generate_explanation(
     fact_checks: list[FactCheckResult],
     search_results: list[SearchResult]
 ) -> str:
-    """Generate grandmother-friendly explanation using LLM gateway."""
+    """Generate grandmother-friendly explanation using 's LLM gateway."""
 
 
     if not settings.LLM_API_KEY:
@@ -136,33 +141,61 @@ async def generate_explanation(
         channel_text += f"\nRecent videos from this creator: {creator_titles[:5]}"
 
 
+    # Use more transcript if available
+    transcript_section = ""
+    if video_info.transcript:
+        transcript_section = f"""
+VIDEO TRANSCRIPT (analyze this for factual claims):
+\"\"\"
+{video_info.transcript[:3000]}
+\"\"\"
+"""
+    else:
+        transcript_section = """
+TRANSCRIPT: Not available - analyze based on title and description only.
+"""
+
+
     user_prompt = f"""
 VIDEO PLATFORM: {video_info.platform.value.upper()}
 VIDEO TITLE: {video_info.title}
 CREATOR: {video_info.creator}
-DESCRIPTION: {video_info.description[:500]}
+VIDEO DESCRIPTION: {video_info.description[:800]}
 
 
-{f"TRANSCRIPT EXCERPT: {video_info.transcript[:1000]}" if video_info.transcript else "TRANSCRIPT: Not available"}
+{transcript_section}
 
 
 {channel_text}
 
 
-FACT-CHECK RESULTS:
+EXISTING FACT-CHECK RESULTS (from fact-check databases):
 {fact_check_text}
 
 
-TRUSTED NEWS SEARCH:
+TRUSTED NEWS COVERAGE:
 {search_text}
 
 
 ---
-Generate a response the family member can share directly with grandmother. Remember: brief, gentle, sourced.
+INSTRUCTIONS:
+1. First, identify the 2-3 main claims made in the video (from transcript/title/description)
+2. Then, analyze each claim for accuracy
+3. Finally, write a brief, gentle response for grandmother explaining what's true/false/misleading
+
+
+Generate the response now:
 """
 
 
     try:
+        if settings.DEBUG:
+            print(f"[LLM] Calling  gateway with model: {settings.LLM_MODEL}")
+            print(f"[LLM] Transcript available: {bool(video_info.transcript)}")
+            if video_info.transcript:
+                print(f"[LLM] Transcript length: {len(video_info.transcript)} chars")
+
+
         client = get_client()
 
 
@@ -172,17 +205,23 @@ Generate a response the family member can share directly with grandmother. Remem
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": user_prompt}
             ],
-            max_tokens=600,
+            max_tokens=800,
             temperature=0.7
         )
 
 
-        return response.choices[0].message.content
+        result = response.choices[0].message.content
+        if settings.DEBUG:
+            print(f"[LLM] Success! Response length: {len(result)} chars")
+
+
+        return result
 
 
     except Exception as e:
-        if settings.DEBUG:
-            print(f"LLM Error: {e}")
+        print(f"[LLM ERROR] {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         return _fallback_response(video_info, fact_checks, search_results)
 
 
